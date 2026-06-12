@@ -1,0 +1,1986 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grandmaster Academy & Bughouse 2v2 Arena</title>
+    <!-- Tailwind CSS for modern, premium styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for professional look -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at center, #111827 0%, #030712 100%);
+            overflow-x: hidden;
+        }
+        .serif-font {
+            font-family: 'Playfair Display', serif;
+        }
+        /* Custom scrollbar for beautiful UI panels */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(31, 41, 55, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.3);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.5);
+        }
+        /* Board Themes styling */
+        .board-walnut .tile-light { background-color: #f0d9b5; color: #b58863; }
+        .board-walnut .tile-dark { background-color: #b58863; color: #f0d9b5; }
+        
+        .board-neon .tile-light { background-color: #1e1b4b; color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.2); }
+        .board-neon .tile-dark { background-color: #311042; color: #ec4899; border: 1px solid rgba(236, 72, 153, 0.2); }
+        
+        .board-amethyst .tile-light { background-color: #eae6f8; color: #7c3aed; }
+        .board-amethyst .tile-dark { background-color: #7c3aed; color: #eae6f8; }
+
+        .board-glass .tile-light { background-color: rgba(255, 255, 255, 0.15); backdrop-filter: blur(4px); color: rgba(255, 255, 255, 0.7); }
+        .board-glass .tile-dark { background-color: rgba(0, 0, 0, 0.45); backdrop-filter: blur(4px); color: rgba(255, 255, 255, 0.3); }
+
+        /* Animation utilities */
+        .piece-grab { cursor: grab; }
+        .piece-grab:active { cursor: grabbing; }
+        
+        @keyframes pulse-check {
+            0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.8) inset; }
+            50% { box-shadow: 0 0 30px rgba(239, 68, 68, 1) inset; }
+        }
+        .king-checked {
+            animation: pulse-check 1.5s infinite;
+            border: 2px solid #ef4444 !important;
+        }
+        
+        @keyframes screen-shake {
+            0%, 100% { transform: translate(0, 0); }
+            10%, 30%, 50%, 70%, 90% { transform: translate(-4px, 2px); }
+            20%, 40%, 60%, 80% { transform: translate(4px, -2px); }
+        }
+        .shake-effect {
+            animation: screen-shake 0.4s ease-out;
+        }
+    </style>
+</head>
+<body class="text-gray-100 min-h-screen flex flex-col justify-between">
+
+<!-- Top Navigation Header -->
+<header class="border-b border-gray-800 bg-gray-950/80 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('dashboard')">
+            <div class="bg-gradient-to-tr from-indigo-500 to-pink-500 p-2 rounded-xl shadow-lg shadow-indigo-500/20">
+                <i class="fa-solid fa-chess-queen text-2xl text-white"></i>
+            </div>
+            <div>
+                <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-gray-200 to-indigo-400 bg-clip-text text-transparent serif-font">GRANDMASTER</span>
+                <span class="text-xs block text-indigo-400 font-semibold tracking-widest -mt-1">ACADEMY & BUGHOUSE</span>
+            </div>
+        </div>
+        
+        <nav class="hidden md:flex space-x-1">
+            <button onclick="switchTab('dashboard')" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold transition bg-gray-900 text-white" id="tab-dashboard">
+                <i class="fa-solid fa-house mr-1.5"></i> Arena Dashboard
+            </button>
+            <button onclick="switchTab('play')" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold text-gray-400 hover:text-white transition" id="tab-play">
+                <i class="fa-solid fa-chess-board mr-1.5"></i> Play Chess
+            </button>
+            <button onclick="switchTab('bughouse')" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold text-gray-400 hover:text-white transition" id="tab-bughouse">
+                <i class="fa-solid fa-people-group mr-1.5"></i> Bughouse 2v2
+            </button>
+            <button onclick="switchTab('academy')" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold text-gray-400 hover:text-white transition" id="tab-academy">
+                <i class="fa-solid fa-graduation-cap mr-1.5"></i> Tactics Academy
+            </button>
+        </nav>
+
+        <div class="flex items-center space-x-3">
+            <button id="toggle-sound" onclick="toggleSound()" class="p-2.5 rounded-lg bg-gray-900 border border-gray-800 hover:border-gray-700 text-indigo-400 transition" title="Toggle Sound FX">
+                <i class="fa-solid fa-volume-high text-lg"></i>
+            </button>
+            <select id="board-theme-select" onchange="changeTheme(this.value)" class="bg-gray-900 border border-gray-800 text-sm rounded-lg px-3 py-2 text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="walnut">Royal Walnut 🪵</option>
+                <option value="neon">Neon Cyberpunk ⚡</option>
+                <option value="amethyst">Royal Amethyst 🔮</option>
+                <option value="glass">Midnight Glass 💎</option>
+            </select>
+        </div>
+    </div>
+</header>
+
+<main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6">
+    
+    <!-- DASHBOARD VIEW -->
+    <section id="view-dashboard" class="space-y-8">
+        <!-- Hero Banner -->
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-900 via-indigo-950 to-gray-950 p-8 md:p-12 border border-indigo-500/20 shadow-2xl">
+            <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:16px_16px]"></div>
+            <div class="relative z-10 max-w-2xl">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 mb-4">
+                    <i class="fa-solid fa-sparkles mr-1.5"></i> Powered by Smart Chess AI
+                </span>
+                <h1 class="text-4xl md:text-5xl font-extrabold serif-font leading-tight text-white mb-4">
+                    Elevate Your Chess with Real-Time Smart Coaching
+                </h1>
+                <p class="text-gray-300 text-base md:text-lg mb-6 leading-relaxed">
+                    Play against dynamic computer minds, challenge cooperative teammates in Bughouse 2v2, or master iconic tactical patterns with interactive warning systems designed to make you unbeatable.
+                </p>
+                <div class="flex flex-wrap gap-4">
+                    <button onclick="startInstantGame('cpu')" class="px-6 py-3 rounded-xl font-bold bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-600/30 text-white transition transform hover:-translate-y-0.5">
+                        <i class="fa-solid fa-robot mr-2"></i> Play vs AI Bot
+                    </button>
+                    <button onclick="switchTab('bughouse')" class="px-6 py-3 rounded-xl font-bold bg-pink-600 hover:bg-pink-500 shadow-lg shadow-pink-600/30 text-white transition transform hover:-translate-y-0.5">
+                        <i class="fa-solid fa-users mr-2"></i> Play 2v2 Bughouse
+                    </button>
+                </div>
+            </div>
+            <!-- Beautiful Floating Board Decorative Graphic -->
+            <div class="absolute right-8 bottom-0 top-0 w-1/3 hidden lg:flex items-center justify-center opacity-40 hover:opacity-80 transition duration-500">
+                <div class="transform rotate-12 scale-110">
+                    <div class="grid grid-cols-4 gap-1 p-2 bg-gray-900 border-4 border-indigo-500/30 rounded-2xl shadow-2xl">
+                        <div class="w-16 h-16 bg-indigo-600/20 rounded flex items-center justify-center"><i class="fa-solid fa-chess-king text-4xl text-indigo-400"></i></div>
+                        <div class="w-16 h-16 bg-indigo-950 rounded"></div>
+                        <div class="w-16 h-16 bg-indigo-600/20 rounded"></div>
+                        <div class="w-16 h-16 bg-indigo-950 rounded flex items-center justify-center"><i class="fa-solid fa-chess-queen text-4xl text-pink-400"></i></div>
+                        <div class="w-16 h-16 bg-indigo-950 rounded"></div>
+                        <div class="w-16 h-16 bg-indigo-600/20 rounded flex items-center justify-center"><i class="fa-solid fa-chess-knight text-4xl text-indigo-400"></i></div>
+                        <div class="w-16 h-16 bg-indigo-950 rounded"></div>
+                        <div class="w-16 h-16 bg-indigo-600/20 rounded"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mode Select Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Solo Arena card -->
+            <div class="bg-gray-900/40 border border-gray-800 rounded-2xl p-6 hover:border-indigo-500/30 transition duration-300 flex flex-col justify-between">
+                <div>
+                    <div class="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 mb-4">
+                        <i class="fa-solid fa-brain text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Singleplayer vs AI</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">
+                        Play against three levels of dynamic machine logic (Easy, Medium, Hard). Enable "Coach Mode" to get immediate, step-by-step warnings when you blunder.
+                    </p>
+                </div>
+                <button onclick="startInstantGame('cpu')" class="w-full py-2.5 rounded-xl bg-gray-800 hover:bg-indigo-600 hover:text-white transition font-semibold text-gray-300 text-sm">
+                    Enter Solo Arena
+                </button>
+            </div>
+
+            <!-- Bughouse Arena card -->
+            <div class="bg-gray-900/40 border border-gray-800 rounded-2xl p-6 hover:border-pink-500/30 transition duration-300 flex flex-col justify-between">
+                <div>
+                    <div class="w-12 h-12 rounded-xl bg-pink-500/10 flex items-center justify-center text-pink-400 mb-4">
+                        <i class="fa-solid fa-dice-d20 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Bughouse 2v2 Co-op</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">
+                        Experience the chaos of Tandem Chess! Two chess boards run in parallel. When your team captures an enemy piece, it gets passed to your teammate's hand to drop on their board!
+                    </p>
+                </div>
+                <button onclick="switchTab('bughouse')" class="w-full py-2.5 rounded-xl bg-gray-800 hover:bg-pink-600 hover:text-white transition font-semibold text-gray-300 text-sm">
+                    Enter Bughouse Arena
+                </button>
+            </div>
+
+            <!-- Academy card -->
+            <div class="bg-gray-900/40 border border-gray-800 rounded-2xl p-6 hover:border-emerald-500/30 transition duration-300 flex flex-col justify-between">
+                <div>
+                    <div class="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 mb-4">
+                        <i class="fa-solid fa-award text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Tactics Academy</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">
+                        Learn powerful tactical motifs like the Greek Gift, standard forks, defensive structures, and game-winning traps with hands-on puzzle solving.
+                    </p>
+                </div>
+                <button onclick="switchTab('academy')" class="w-full py-2.5 rounded-xl bg-gray-800 hover:bg-emerald-600 hover:text-white transition font-semibold text-gray-300 text-sm">
+                    Enter Academy
+                </button>
+            </div>
+        </div>
+
+        <!-- Dynamic Tip Panel -->
+        <div class="bg-indigo-950/20 border border-indigo-500/15 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-4">
+                <span class="text-3xl">💡</span>
+                <div>
+                    <h4 class="font-bold text-indigo-300">Pro Chess Tip of the Day</h4>
+                    <p class="text-gray-400 text-sm">"Control the four center squares (d4, e4, d5, e5). Pieces placed near the center possess a far higher range of movement and power."</p>
+                </div>
+            </div>
+            <button onclick="loadRandomAcademyPuzzle()" class="px-4 py-2 rounded-lg bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white text-xs font-bold uppercase tracking-wider transition">
+                Solve a Puzzle
+            </button>
+        </div>
+    </section>
+
+    <!-- PLAY / SOLO ARENA VIEW -->
+    <section id="view-play" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Sidebar / Game Stats (Left column) -->
+        <div class="lg:col-span-3 space-y-4 flex flex-col justify-between order-2 lg:order-1">
+            <!-- Player Setup / Mode Config -->
+            <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-4 space-y-4">
+                <h3 class="text-base font-bold text-gray-300 border-b border-gray-800 pb-2 flex items-center">
+                    <i class="fa-solid fa-sliders text-indigo-400 mr-2"></i> Arena Setup
+                </h3>
+                <!-- Mode select -->
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Opponent Mode</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="setPlayOpponent('cpu')" id="opp-cpu" class="px-3 py-2 text-xs font-bold rounded-lg border transition bg-indigo-600/20 border-indigo-500 text-indigo-300">
+                            <i class="fa-solid fa-robot mr-1"></i> VS Computer
+                        </button>
+                        <button onclick="setPlayOpponent('local')" id="opp-local" class="px-3 py-2 text-xs font-bold rounded-lg border transition bg-gray-950 border-gray-800 text-gray-400 hover:border-gray-700">
+                            <i class="fa-solid fa-user-friends mr-1"></i> Local 2-Player
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Difficulty levels -->
+                <div id="difficulty-panel" class="space-y-2">
+                    <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">AI Mind Level</label>
+                    <div class="grid grid-cols-3 gap-1.5">
+                        <button onclick="setDifficulty('easy')" id="diff-easy" class="px-2 py-1.5 text-xs font-bold rounded-lg border bg-emerald-500/10 border-emerald-500/30 text-emerald-400">Easy</button>
+                        <button onclick="setDifficulty('medium')" id="diff-medium" class="px-2 py-1.5 text-xs font-bold rounded-lg border bg-gray-950 border-gray-800 text-gray-400 hover:border-gray-700">Medium</button>
+                        <button onclick="setDifficulty('hard')" id="diff-hard" class="px-2 py-1.5 text-xs font-bold rounded-lg border bg-gray-950 border-gray-800 text-gray-400 hover:border-gray-700">Hard</button>
+                    </div>
+                </div>
+
+                <!-- Coach Assistant Toggle -->
+                <div class="flex items-center justify-between pt-2 border-t border-gray-800">
+                    <div>
+                        <span class="text-xs font-bold text-gray-300 block">AI Smart Coach</span>
+                        <span class="text-[10px] text-gray-400 block">Warns of tactical blunders</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="coach-toggle" class="sr-only peer" checked onchange="toggleCoach(this.checked)">
+                        <div class="w-11 h-6 bg-gray-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Visual Game Evaluation / Log -->
+            <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-4 flex-grow flex flex-col justify-between space-y-4">
+                <div>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 border-b border-gray-800 pb-2">Evaluation</h3>
+                    <div class="flex items-center space-x-3 mt-3">
+                        <div class="w-4 h-32 bg-gray-800 rounded-full overflow-hidden relative border border-gray-700">
+                            <div id="eval-bar" class="absolute bottom-0 w-full bg-indigo-500 transition-all duration-500" style="height: 50%;"></div>
+                        </div>
+                        <div class="flex-grow space-y-1">
+                            <span id="eval-text" class="text-base font-extrabold tracking-wide text-indigo-400">+0.0</span>
+                            <span class="text-[10px] text-gray-500 block">Calculated by Alpha-Beta Minimax</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Capture pieces display -->
+                <div class="space-y-2">
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block">Captured Treasures</span>
+                    <div class="flex flex-col gap-2 bg-gray-950/50 p-3 rounded-xl border border-gray-800/80 min-h-[70px]">
+                        <div id="captured-black" class="flex flex-wrap gap-1 text-sm text-gray-200"></div>
+                        <div id="captured-white" class="flex flex-wrap gap-1 text-sm text-gray-500"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- The Main Interactive Chessboard (Middle Column) -->
+        <div class="lg:col-span-6 flex flex-col items-center justify-center order-1 lg:order-2 space-y-4">
+            <!-- Active Game Header (Opponent card) -->
+            <div class="w-full max-w-[480px] bg-gray-900/60 border border-gray-800 rounded-2xl px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-pink-500/10 flex items-center justify-center text-pink-400">
+                        <i class="fa-solid fa-user-ninja text-xl" id="opp-avatar"></i>
+                    </div>
+                    <div>
+                        <h4 id="active-opp-name" class="font-bold text-sm">DeepMind Bot v1</h4>
+                        <span id="active-opp-level" class="text-[10px] text-emerald-400 uppercase tracking-widest font-semibold">Easy Thinking</span>
+                    </div>
+                </div>
+                <!-- Time remaining / Turn indicator -->
+                <div id="opp-status-pulse" class="flex items-center space-x-2 bg-gray-950 px-3 py-1.5 rounded-lg border border-gray-800">
+                    <span class="w-2.5 h-2.5 rounded-full bg-gray-600" id="opp-turn-dot"></span>
+                    <span class="text-xs font-mono font-semibold" id="opp-clock">--:--</span>
+                </div>
+            </div>
+
+            <!-- Chessboard Component wrapper -->
+            <div class="relative w-full max-w-[480px] aspect-square rounded-2xl overflow-hidden shadow-2xl border-4 border-gray-800/60 bg-gray-950" id="board-container">
+                <!-- Grid board overlay loaded dynamically via javascript -->
+                <div id="chessboard" class="grid grid-cols-8 grid-rows-8 w-full h-full board-walnut"></div>
+            </div>
+
+            <!-- Player Info card -->
+            <div class="w-full max-w-[480px] bg-gray-900/60 border border-gray-800 rounded-2xl px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                        <i class="fa-solid fa-crown text-xl"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-sm">You (Grandmaster Candidate)</h4>
+                        <span class="text-[10px] text-gray-400 uppercase tracking-widest font-semibold">Ready for move</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2 bg-gray-950 px-3 py-1.5 rounded-lg border border-gray-800">
+                    <span class="w-2.5 h-2.5 rounded-full bg-green-500" id="player-turn-dot"></span>
+                    <span class="text-xs font-mono font-semibold" id="player-clock">--:--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side / Game Controls & Move Log -->
+        <div class="lg:col-span-3 space-y-4 flex flex-col justify-between order-3">
+            <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-4 flex-grow flex flex-col justify-between space-y-4">
+                <div>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 border-b border-gray-800 pb-2 flex justify-between items-center">
+                        <span>Live Battle Log</span>
+                        <span class="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 text-[10px] font-mono" id="log-turn-counter">Move 0</span>
+                    </h3>
+                    <div id="move-history-container" class="h-64 overflow-y-auto mt-3 pr-1 text-sm font-mono space-y-1">
+                        <!-- Moves appended dynamically -->
+                        <div class="text-gray-500 text-xs italic text-center py-8">No moves played yet. Start by moving a pawn or knight!</div>
+                    </div>
+                </div>
+
+                <!-- Action Button grid -->
+                <div class="space-y-2">
+                    <button onclick="requestHint()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-600/20 to-amber-700/25 border border-amber-500/30 text-amber-300 hover:from-amber-600 hover:to-amber-700 hover:text-white transition text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Suggest Best Move
+                    </button>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="undoLastMove()" class="py-2 px-3 rounded-lg bg-gray-800 border border-gray-700 hover:bg-gray-700 text-gray-200 text-xs font-semibold transition flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-rotate-left"></i> Undo
+                        </button>
+                        <button onclick="resetActiveGame()" class="py-2 px-3 rounded-lg bg-red-950/30 border border-red-800/30 hover:bg-red-800 hover:text-white text-red-300 text-xs font-semibold transition flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-arrows-rotate"></i> Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mini Coach advice bubble -->
+            <div class="bg-indigo-950/20 border border-indigo-500/20 rounded-2xl p-4 relative overflow-hidden">
+                <div class="absolute -right-4 -bottom-4 opacity-5 pointer-events-none transform rotate-12">
+                    <i class="fa-solid fa-graduation-cap text-8xl text-indigo-400"></i>
+                </div>
+                <div class="flex items-start space-x-3">
+                    <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
+                        👨‍🏫
+                    </div>
+                    <div class="space-y-1">
+                        <h4 class="text-xs font-bold text-indigo-300">Coach Advisor</h4>
+                        <p id="coach-realtime-bubble" class="text-[11px] text-gray-300 leading-relaxed">
+                            Hello! I am monitoring the board. Make a move, and I'll jump in if there's a blunder to teach you the pattern!
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- BUGHOUSE ARENA VIEW -->
+    <section id="view-bughouse" class="hidden space-y-6">
+        <div class="bg-pink-950/20 border border-pink-500/20 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <span class="text-3xl">⚔️</span>
+                <div>
+                    <h3 class="text-lg font-extrabold text-pink-300 serif-font">Bughouse Team Arena (2v2 Cooperative)</h3>
+                    <p class="text-gray-400 text-xs">You play on Board A. Your AI Partner plays on Board B. Your captures land in each other's "Reserve drop pool"!</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="startBughouseGame()" class="px-5 py-2 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs uppercase tracking-wider transition">
+                    <i class="fa-solid fa-play mr-1.5"></i> Restart Bughouse Match
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- BOARD A: Player vs Opponent A -->
+            <div class="bg-gray-900/40 border border-gray-800 rounded-2xl p-4 flex flex-col items-center space-y-4">
+                <div class="w-full flex justify-between items-center bg-gray-950/60 p-2.5 rounded-xl border border-gray-800">
+                    <span class="text-xs font-bold text-gray-400">Board A Opponent (CPU A)</span>
+                    <span class="px-2.5 py-1 text-[10px] font-bold uppercase rounded bg-red-500/10 text-red-400 border border-red-500/20">Active</span>
+                </div>
+                
+                <!-- Reserve/Drop pool of Pieces Passed by Board B Partner -->
+                <div class="w-full flex items-center justify-between p-2 bg-pink-950/10 border border-pink-500/10 rounded-xl">
+                    <span class="text-[10px] uppercase font-bold text-pink-400">Board A Reserve (Click to Drop on board)</span>
+                    <div id="bughouse-reserve-a" class="flex gap-2">
+                        <!-- Pieces will dynamically render here -->
+                    </div>
+                </div>
+
+                <!-- Chessboard A container -->
+                <div class="relative w-full max-w-[400px] aspect-square rounded-2xl overflow-hidden shadow-2xl border-4 border-indigo-500/20 bg-gray-950">
+                    <div id="bughouse-board-a" class="grid grid-cols-8 grid-rows-8 w-full h-full board-walnut"></div>
+                </div>
+
+                <div class="w-full flex justify-between items-center bg-gray-950/60 p-2.5 rounded-xl border border-gray-800">
+                    <span class="text-xs font-bold text-indigo-400">You (White)</span>
+                    <span class="text-xs font-mono font-bold" id="bughouse-turn-indicator-a">Your Turn</span>
+                </div>
+            </div>
+
+            <!-- BOARD B: AI Teammate vs Opponent B -->
+            <div class="bg-gray-900/40 border border-gray-800 rounded-2xl p-4 flex flex-col items-center space-y-4">
+                <div class="w-full flex justify-between items-center bg-gray-950/60 p-2.5 rounded-xl border border-gray-800">
+                    <span class="text-xs font-bold text-gray-400">Board B Opponent (CPU B)</span>
+                    <span class="px-2.5 py-1 text-[10px] font-bold uppercase rounded bg-pink-500/10 text-pink-400 border border-pink-500/20">AI Automated</span>
+                </div>
+
+                <!-- Reserve/Drop pool of Pieces Passed by Player to Board B Partner -->
+                <div class="w-full flex items-center justify-between p-2 bg-pink-950/10 border border-pink-500/10 rounded-xl">
+                    <span class="text-[10px] uppercase font-bold text-pink-400">Board B Reserve (CPU drops automatically)</span>
+                    <div id="bughouse-reserve-b" class="flex gap-2">
+                        <!-- Pieces will dynamically render here -->
+                    </div>
+                </div>
+
+                <!-- Chessboard B container -->
+                <div class="relative w-full max-w-[400px] aspect-square rounded-2xl overflow-hidden shadow-2xl border-4 border-pink-500/20 bg-gray-950">
+                    <!-- Semi-transparent overlay to indicate AI's automated environment -->
+                    <div class="absolute inset-0 bg-gray-950/10 pointer-events-none z-10"></div>
+                    <div id="bughouse-board-b" class="grid grid-cols-8 grid-rows-8 w-full h-full board-walnut opacity-90 pointer-events-none"></div>
+                </div>
+
+                <div class="w-full flex justify-between items-center bg-gray-950/60 p-2.5 rounded-xl border border-gray-800">
+                    <span class="text-xs font-bold text-emerald-400">Teammate AI (White)</span>
+                    <span class="text-xs font-mono font-bold text-gray-400" id="bughouse-turn-indicator-b">Thinking...</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TACTICS ACADEMY VIEW -->
+    <section id="view-academy" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Play / Interactive board (left) -->
+        <div class="lg:col-span-7 flex flex-col items-center justify-center space-y-4">
+            <div class="w-full max-w-[440px] bg-gradient-to-r from-emerald-950/40 to-emerald-900/20 border border-emerald-500/20 rounded-2xl px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <span class="text-2xl">🎓</span>
+                    <div>
+                        <h4 id="puzzle-title" class="font-bold text-sm text-emerald-300">Tactics Masterclass</h4>
+                        <p id="puzzle-subtitle" class="text-[10px] text-gray-400">White to move and find the crushing blow</p>
+                    </div>
+                </div>
+                <div class="bg-emerald-950 px-3 py-1 rounded-lg border border-emerald-800/50">
+                    <span class="text-xs font-semibold text-emerald-400" id="puzzle-score-badge">Level 1</span>
+                </div>
+            </div>
+
+            <!-- Interactive Board -->
+            <div class="relative w-full max-w-[440px] aspect-square rounded-2xl overflow-hidden shadow-2xl border-4 border-emerald-500/30 bg-gray-950">
+                <div id="academy-board" class="grid grid-cols-8 grid-rows-8 w-full h-full board-walnut"></div>
+            </div>
+
+            <!-- Puzzle Help/Hint message board -->
+            <div id="puzzle-advisor" class="w-full max-w-[440px] bg-gray-900/60 border border-gray-800 p-4 rounded-2xl flex items-start space-x-3">
+                <span class="text-2xl shrink-0">🦉</span>
+                <div class="space-y-1">
+                    <h5 class="text-xs font-bold text-emerald-400 uppercase tracking-widest">Grandmaster Advisor</h5>
+                    <p id="puzzle-guidance-text" class="text-xs text-gray-300 leading-relaxed">Select a piece and plan your offensive carefully. Analyze potential pins and unprotected coordinates!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Course Syllabus / Directory (right) -->
+        <div class="lg:col-span-5 space-y-4">
+            <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-5 space-y-4">
+                <h3 class="text-lg font-bold serif-font border-b border-gray-800 pb-3 flex items-center text-gray-200">
+                    <i class="fa-solid fa-book-open text-emerald-400 mr-2.5"></i> Course Syllabus & Tricks Library
+                </h3>
+                
+                <div class="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                    <!-- Puzzle Item 1 -->
+                    <div onclick="selectAcademyPuzzle(0)" id="puzzle-item-0" class="p-3 rounded-xl border border-emerald-500 bg-emerald-950/10 cursor-pointer hover:bg-emerald-950/25 transition flex items-center justify-between">
+                        <div class="space-y-1">
+                            <span class="text-xs font-bold text-emerald-400 block">Lesson 1: The Devastating Knight Fork</span>
+                            <span class="text-[10px] text-gray-400 block">Learn how to capture multiple royalty pieces simultaneously.</span>
+                        </div>
+                        <i class="fa-solid fa-circle-play text-emerald-400 text-lg"></i>
+                    </div>
+
+                    <!-- Puzzle Item 2 -->
+                    <div onclick="selectAcademyPuzzle(1)" id="puzzle-item-1" class="p-3 rounded-xl border border-gray-800 bg-gray-950/40 cursor-pointer hover:bg-gray-900/30 transition flex items-center justify-between">
+                        <div class="space-y-1">
+                            <span class="text-xs font-bold text-gray-300 block">Lesson 2: Absolute Pins & Defensive Collapses</span>
+                            <span class="text-[10px] text-gray-400 block">Paralyze powerful defenders against check requirements.</span>
+                        </div>
+                        <i class="fa-solid fa-circle-play text-gray-600 text-lg"></i>
+                    </div>
+
+                    <!-- Puzzle Item 3 -->
+                    <div onclick="selectAcademyPuzzle(2)" id="puzzle-item-2" class="p-3 rounded-xl border border-gray-800 bg-gray-950/40 cursor-pointer hover:bg-gray-900/30 transition flex items-center justify-between">
+                        <div class="space-y-1">
+                            <span class="text-xs font-bold text-gray-300 block">Lesson 3: Back-Rank Mate Ambush</span>
+                            <span class="text-[10px] text-gray-400 block">Exploit defensive structures to finish the game early.</span>
+                        </div>
+                        <i class="fa-solid fa-circle-play text-gray-600 text-lg"></i>
+                    </div>
+
+                    <!-- Puzzle Item 4 -->
+                    <div onclick="selectAcademyPuzzle(3)" id="puzzle-item-3" class="p-3 rounded-xl border border-gray-800 bg-gray-950/40 cursor-pointer hover:bg-gray-900/30 transition flex items-center justify-between">
+                        <div class="space-y-1">
+                            <span class="text-xs font-bold text-gray-300 block">Lesson 4: Defeating the Scholar's Mate Trap</span>
+                            <span class="text-[10px] text-gray-400 block">Defend early Queen attacks and launch immediate counters.</span>
+                        </div>
+                        <i class="fa-solid fa-circle-play text-gray-600 text-lg"></i>
+                    </div>
+                </div>
+
+                <div class="bg-gray-950 p-4 rounded-xl border border-gray-800 space-y-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-gray-400 block">Academy Stats</span>
+                    <div class="grid grid-cols-2 gap-2 text-center">
+                        <div class="bg-gray-900/50 p-3 rounded-lg border border-gray-800/60">
+                            <span class="text-xl font-extrabold text-indigo-400" id="academy-completed-count">0 / 4</span>
+                            <span class="text-[10px] text-gray-500 block">Solved Lessons</span>
+                        </div>
+                        <div class="bg-gray-900/50 p-3 rounded-lg border border-gray-800/60">
+                            <span class="text-xl font-extrabold text-emerald-400" id="academy-rating">1200</span>
+                            <span class="text-[10px] text-gray-500 block">Tactics Rating</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<!-- Blunder Warning Interactive Modal / Tutoring Popup -->
+<div id="blunder-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-950/80 backdrop-blur-sm transition duration-300">
+    <div class="bg-gray-900 border-2 border-amber-500/40 rounded-3xl max-w-md w-full p-6 shadow-2xl relative overflow-hidden transform scale-95 transition-all duration-300">
+        <!-- Floating spark/caution effect -->
+        <div class="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-amber-500/10 blur-xl"></div>
+        
+        <div class="flex flex-col items-center text-center space-y-4 relative z-10">
+            <div class="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-3xl text-amber-400 animate-bounce">
+                ⚠️
+            </div>
+            
+            <div class="space-y-1">
+                <span class="text-[10px] uppercase font-bold tracking-widest text-amber-400">Tactics Warning Intercepted</span>
+                <h3 class="text-xl font-extrabold serif-font text-white">Coach Says: That's a Blunder!</h3>
+            </div>
+            
+            <p id="blunder-analysis-text" class="text-gray-300 text-xs leading-relaxed">
+                By making that move, you left your bishop entirely undefended, allowing the opponent's knight to fork your king and rook! Let's correct this line.
+            </p>
+
+            <div class="bg-gray-950 p-3 rounded-xl border border-gray-800 text-left w-full space-y-1">
+                <span class="text-[10px] font-bold text-indigo-400 block uppercase tracking-wider">Alternative Recommendation</span>
+                <p id="blunder-recommendation-text" class="text-gray-400 text-[11px] leading-relaxed">
+                    Try pushing your pawn forward instead to fortify center control and build a safe fortress.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 w-full pt-2">
+                <button onclick="resolveBlunderChoice('undo')" class="py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-wider transition shadow-lg shadow-indigo-600/20">
+                    <i class="fa-solid fa-rotate-left mr-1"></i> Undo & Retake
+                </button>
+                <button onclick="resolveBlunderChoice('force')" class="py-3 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white text-xs font-bold uppercase tracking-wider transition">
+                    Play Anyway ⚔️
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Promotion Choice Popup Overlay -->
+<div id="promotion-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-950/80 backdrop-blur-sm">
+    <div class="bg-gray-900 border border-gray-800 rounded-3xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl">
+        <h3 class="text-lg font-bold serif-font text-white">Choose Pawn Promotion</h3>
+        <p class="text-gray-400 text-xs">Ascend your pawn to a majestic tactical piece.</p>
+        <div class="grid grid-cols-4 gap-2 pt-2">
+            <button onclick="selectPromotionPiece('Q')" class="py-4 bg-gray-950 border border-gray-800 hover:border-indigo-500 rounded-xl transition text-2xl" id="promo-q">♛</button>
+            <button onclick="selectPromotionPiece('R')" class="py-4 bg-gray-950 border border-gray-800 hover:border-indigo-500 rounded-xl transition text-2xl" id="promo-r">♜</button>
+            <button onclick="selectPromotionPiece('B')" class="py-4 bg-gray-950 border border-gray-800 hover:border-indigo-500 rounded-xl transition text-2xl" id="promo-b">♝</button>
+            <button onclick="selectPromotionPiece('N')" class="py-4 bg-gray-950 border border-gray-800 hover:border-indigo-500 rounded-xl transition text-2xl" id="promo-n">♞</button>
+        </div>
+    </div>
+</div>
+
+<!-- Footer with developer credits and helpful status -->
+<footer class="border-t border-gray-900 bg-gray-950/50 py-6 text-center text-xs text-gray-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
+        <span>© 2026 Grandmaster Chess Academy. Engineered with Alpha-Beta AI logic & Web Audio.</span>
+        <div class="flex space-x-4">
+            <a href="#" class="hover:text-white transition">Privacy Policy</a>
+            <span>•</span>
+            <a href="#" class="hover:text-white transition">Terms of Service</a>
+            <span>•</span>
+            <a href="#" class="hover:text-white transition">Chess.org Handbook</a>
+        </div>
+    </div>
+</footer>
+
+<script>
+/*
+ * PROCEDURAL AUDIO SYNTHESIZER
+ * Synthesizes high-fidelity chess-themed audio locally using the Web Audio API (No outside MP3 files)
+ */
+let soundEnabled = true;
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function toggleSound() {
+    soundEnabled = !soundEnabled;
+    const btn = document.getElementById('toggle-sound');
+    if (soundEnabled) {
+        btn.innerHTML = '<i class="fa-solid fa-volume-high text-lg"></i>';
+        btn.classList.remove('text-red-400');
+        btn.classList.add('text-indigo-400');
+        playSynthSound('success');
+    } else {
+        btn.innerHTML = '<i class="fa-solid fa-volume-xmark text-lg"></i>';
+        btn.classList.remove('text-indigo-400');
+        btn.classList.add('text-red-400');
+    }
+}
+
+function playSynthSound(type) {
+    if (!soundEnabled) return;
+    try {
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        const now = audioCtx.currentTime;
+        
+        if (type === 'move') {
+            // Satisfying soft woody thump of a chess piece moving
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(140, now);
+            osc.frequency.exponentialRampToValueAtTime(80, now + 0.1);
+            gainNode.gain.setValueAtTime(0.4, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+            osc.start(now);
+            osc.stop(now + 0.12);
+        } else if (type === 'capture') {
+            // Metallic click of capturing pieces
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(450, now);
+            osc.frequency.setValueAtTime(320, now + 0.05);
+            gainNode.gain.setValueAtTime(0.3, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+            osc.start(now);
+            osc.stop(now + 0.15);
+        } else if (type === 'check') {
+            // Bright ring warning of king check
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(587.33, now); // D5
+            osc.frequency.setValueAtTime(698.46, now + 0.08); // F5
+            gainNode.gain.setValueAtTime(0.15, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+            osc.start(now);
+            osc.stop(now + 0.25);
+        } else if (type === 'blunder') {
+            // Soft dramatic low warning buzzer
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(110, now);
+            osc.frequency.setValueAtTime(95, now + 0.1);
+            gainNode.gain.setValueAtTime(0.2, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+            osc.start(now);
+            osc.stop(now + 0.4);
+        } else if (type === 'success') {
+            // Bright harmonic chime
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(523.25, now); // C5
+            osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+            osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+            gainNode.gain.setValueAtTime(0.15, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+            osc.start(now);
+            osc.stop(now + 0.4);
+        }
+    } catch (e) {
+        console.warn('Audio synthesis initialized block', e);
+    }
+}
+
+/*
+ * CRISP VECTOR PIECE RENDERING ENGINE
+ * Returns gorgeous custom-styled Unicode/SVG vectors mapping traditional symbols into high-definition realistic pieces.
+ */
+const unicodePieces = {
+    'wp': '♙', 'wr': '♖', 'wn': '♘', 'wb': '♗', 'wq': '♕', 'wk': '♔',
+    'bp': '♟', 'br': '♜', 'bn': '♞', 'bb': '♝', 'bq': '♛', 'bk': '♚'
+};
+
+function getPieceHTML(type) {
+    if (!type) return '';
+    const colorClass = type[0] === 'w' ? 'text-white' : 'text-gray-900';
+    const fillStyle = type[0] === 'w' ? 'filter drop-shadow-[0_2px_4px_rgba(255,255,255,0.4)]' : 'filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]';
+    const symbol = unicodePieces[type];
+    
+    // Inject custom high-detail SVGs programmatically for selected royals to look super-realistic, fallback to beautiful styled vectors.
+    return `<div class="w-full h-full flex items-center justify-center text-4.5xl font-semibold md:text-5xl select-none transition transform duration-200 active:scale-110 active:rotate-1 piece-grab ${colorClass} ${fillStyle}" style="font-size: 2.8rem;">
+        ${symbol}
+    </div>`;
+}
+
+/*
+ * ROBUST CUSTOM CHESS RULES ENGINE
+ * Encapsulates movement rules, checkmate computations, en-passant tracking, and game simulation loops.
+ */
+class ChessEngine {
+    constructor() {
+        this.reset();
+    }
+
+    reset() {
+        this.board = [
+            ['br', 'bn', 'bb', 'bq', 'bk', 'bb', 'bn', 'br'],
+            ['bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp'],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp'],
+            ['wr', 'wn', 'wb', 'wq', 'wk', 'wb', 'wn', 'wr']
+        ];
+        this.turn = 'w';
+        this.history = []; // Stack for unlimited undo
+        this.captured = { 'w': [], 'b': [] };
+        this.castling = { 'w': { 'king': true, 'queen': true }, 'b': { 'king': true, 'queen': true } };
+        this.enPassant = null; // Coordinates of pawn that just double jumped
+    }
+
+    clone() {
+        const copy = new ChessEngine();
+        copy.board = this.board.map(row => [...row]);
+        copy.turn = this.turn;
+        copy.castling = {
+            'w': { ...this.castling.w },
+            'b': { ...this.castling.b }
+        };
+        copy.enPassant = this.enPassant ? { ...this.enPassant } : null;
+        return copy;
+    }
+
+    // Comprehensive legal move generator
+    getMovesForSquare(r, c) {
+        const piece = this.board[r][c];
+        if (!piece || piece[0] !== this.turn) return [];
+
+        const type = piece[1];
+        const color = piece[0];
+        const moves = [];
+
+        // Directions definition
+        const rookDirs = [[-1,0], [1,0], [0,-1], [0,1]];
+        const bishopDirs = [[-1,-1], [-1,1], [1,-1], [1,1]];
+        const knightDirs = [[-2,-1], [-2,1], [-1,-2], [-1,2], [1,-2], [1,2], [2,-1], [2,1]];
+
+        if (type === 'p') {
+            const dir = color === 'w' ? -1 : 1;
+            const startRow = color === 'w' ? 6 : 1;
+            
+            // Step forward 1
+            if (this.isInside(r + dir, c) && !this.board[r + dir][c]) {
+                moves.push({ r: r + dir, c: c });
+                // Step forward 2
+                if (r === startRow && !this.board[r + dir * 2][c]) {
+                    moves.push({ r: r + dir * 2, c: c, isDouble: true });
+                }
+            }
+
+            // Standard diagonals and en-passant capture
+            const attacks = [[dir, -1], [dir, 1]];
+            attacks.forEach(([dr, dc]) => {
+                const nr = r + dr, nc = c + dc;
+                if (this.isInside(nr, nc)) {
+                    const tar = this.board[nr][nc];
+                    if (tar && tar[0] !== color) {
+                        moves.push({ r: nr, c: nc });
+                    }
+                    // En Passant check
+                    if (this.enPassant && this.enPassant.r === nr && this.enPassant.c === nc) {
+                        moves.push({ r: nr, c: nc, isEnPassant: true });
+                    }
+                }
+            });
+        } 
+        else if (type === 'r') {
+            this.slideDirs(r, c, color, rookDirs, moves);
+        } 
+        else if (type === 'b') {
+            this.slideDirs(r, c, color, bishopDirs, moves);
+        } 
+        else if (type === 'q') {
+            this.slideDirs(r, c, color, rookDirs.concat(bishopDirs), moves);
+        } 
+        else if (type === 'n') {
+            knightDirs.forEach(([dr, dc]) => {
+                const nr = r + dr, nc = c + dc;
+                if (this.isInside(nr, nc)) {
+                    const tar = this.board[nr][nc];
+                    if (!tar || tar[0] !== color) {
+                        moves.push({ r: nr, c: nc });
+                    }
+                }
+            });
+        } 
+        else if (type === 'k') {
+            // King standard
+            const kingDirs = rookDirs.concat(bishopDirs);
+            kingDirs.forEach(([dr, dc]) => {
+                const nr = r + dr, nc = c + dc;
+                if (this.isInside(nr, nc)) {
+                    const tar = this.board[nr][nc];
+                    if (!tar || tar[0] !== color) {
+                        moves.push({ r: nr, c: nc });
+                    }
+                }
+            });
+
+            // King Castling move additions
+            this.addCastlingMoves(r, c, color, moves);
+        }
+
+        // Filter out moves that leave or put the allied King in check
+        return moves.filter(m => {
+            const tempEngine = this.clone();
+            tempEngine.executeMove(r, c, m.r, m.c, false);
+            return !tempEngine.isKingChecked(color);
+        });
+    }
+
+    slideDirs(r, c, color, dirs, list) {
+        dirs.forEach(([dr, dc]) => {
+            let nr = r + dr, nc = c + dc;
+            while (this.isInside(nr, nc)) {
+                const tar = this.board[nr][nc];
+                if (!tar) {
+                    list.push({ r: nr, c: nc });
+                } else {
+                    if (tar[0] !== color) {
+                        list.push({ r: nr, c: nc });
+                    }
+                    break;
+                }
+                nr += dr;
+                nc += dc;
+            }
+        });
+    }
+
+    addCastlingMoves(r, c, color, moves) {
+        if (this.isKingChecked(color)) return;
+        
+        const castleRow = color === 'w' ? 7 : 0;
+        if (r !== castleRow || c !== 4) return;
+
+        // Kingside castle
+        if (this.castling[color].king) {
+            if (!this.board[castleRow][5] && !this.board[castleRow][6] && this.board[castleRow][7] === color + 'r') {
+                // Ensure squares passed are safe
+                if (this.isSquareSafe(castleRow, 5, color) && this.isSquareSafe(castleRow, 6, color)) {
+                    moves.push({ r: castleRow, c: 6, isCastleKing: true });
+                }
+            }
+        }
+        // Queenside castle
+        if (this.castling[color].queen) {
+            if (!this.board[castleRow][3] && !this.board[castleRow][2] && !this.board[castleRow][1] && this.board[castleRow][0] === color + 'r') {
+                if (this.isSquareSafe(castleRow, 3, color) && this.isSquareSafe(castleRow, 2, color)) {
+                    moves.push({ r: castleRow, c: 2, isCastleQueen: true });
+                }
+            }
+        }
+    }
+
+    isInside(r, c) {
+        return r >= 0 && r < 8 && c >= 0 && c < 8;
+    }
+
+    isSquareSafe(r, c, defenseColor) {
+        const attackColor = defenseColor === 'w' ? 'b' : 'w';
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 8; col++) {
+                const piece = this.board[row][col];
+                if (piece && piece[0] === attackColor) {
+                    // Check hypothetical attack vector targeting row,col
+                    const directions = {
+                        'r': [[-1,0], [1,0], [0,-1], [0,1]],
+                        'b': [[-1,-1], [-1,1], [1,-1], [1,1]],
+                        'n': [[-2,-1], [-2,1], [-1,-2], [-1,2], [1,-2], [1,2], [2,-1], [2,1]],
+                        'k': [[-1,0], [1,0], [0,-1], [0,1], [-1,-1], [-1,1], [1,-1], [1,1]],
+                        'p': attackColor === 'w' ? [[-1,-1], [-1,1]] : [[1,-1], [1,1]]
+                    };
+                    const type = piece[1];
+                    if (type === 'p') {
+                        for (let [dr, dc] of directions.p) {
+                            if (row + dr === r && col + dc === c) return false;
+                        }
+                    } else if (type === 'n') {
+                        for (let [dr, dc] of directions.n) {
+                            if (row + dr === r && col + dc === c) return false;
+                        }
+                    } else if (type === 'k') {
+                        for (let [dr, dc] of directions.k) {
+                            if (row + dr === r && col + dc === c) return false;
+                        }
+                    } else {
+                        // Slider calculations
+                        const dirs = type === 'q' ? directions.r.concat(directions.b) : (type === 'r' ? directions.r : directions.b);
+                        for (let [dr, dc] of dirs) {
+                            let nr = row + dr, nc = col + dc;
+                            while (this.isInside(nr, nc)) {
+                                if (nr === r && nc === c) return false;
+                                if (this.board[nr][nc]) break; // Obstacle
+                                nr += dr;
+                                nc += dc;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    isKingChecked(color) {
+        // Find King first
+        let kr = -1, kc = -1;
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                if (this.board[r][c] === color + 'k') {
+                    kr = r; kc = c;
+                    break;
+                }
+            }
+        }
+        if (kr === -1) return false; // Edge cases fallback
+        return !this.isSquareSafe(kr, kc, color);
+    }
+
+    executeMove(fr, fc, tr, tc, actualPlay = true) {
+        const p = this.board[fr][fc];
+        const destPiece = this.board[tr][tc];
+
+        // Save history state for undo/redo before modification
+        if (actualPlay) {
+            this.history.push({
+                board: this.board.map(row => [...row]),
+                turn: this.turn,
+                captured: { 'w': [...this.captured.w], 'b': [...this.captured.b] },
+                castling: { 'w': { ...this.castling.w }, 'b': { ...this.castling.b } },
+                enPassant: this.enPassant ? { ...this.enPassant } : null
+            });
+        }
+
+        // Handle capture logs
+        if (destPiece && actualPlay) {
+            this.captured[this.turn === 'w' ? 'b' : 'w'].push(destPiece);
+            playSynthSound('capture');
+        } else if (actualPlay) {
+            playSynthSound('move');
+        }
+
+        // Perform main move
+        this.board[tr][tc] = p;
+        this.board[fr][fc] = '';
+
+        // Castling adjustments
+        if (p[1] === 'k') {
+            this.castling[p[0]].king = false;
+            this.castling[p[0]].queen = false;
+            if (Math.abs(fc - tc) === 2) {
+                // Determine castling side rook moves
+                if (tc === 6) { // Kingside
+                    this.board[tr][5] = p[0] + 'r';
+                    this.board[tr][7] = '';
+                } else if (tc === 2) { // Queenside
+                    this.board[tr][3] = p[0] + 'r';
+                    this.board[tr][0] = '';
+                }
+            }
+        }
+
+        // Rook castling invalidation
+        if (p[1] === 'r') {
+            if (fr === (p[0] === 'w' ? 7 : 0)) {
+                if (fc === 0) this.castling[p[0]].queen = false;
+                if (fc === 7) this.castling[p[0]].king = false;
+            }
+        }
+
+        // Pawn promotions automatically trigger Queen inside the logic (UI can trigger customizable promotes)
+        if (p[1] === 'p' && (tr === 0 || tr === 7)) {
+            this.board[tr][tc] = p[0] + 'q'; // Default to Queen for engine internal simulation
+        }
+
+        // Keep track of double pawns for en-passant tracking
+        if (p[1] === 'p' && Math.abs(fr - tr) === 2) {
+            this.enPassant = { r: (fr + tr) / 2, c: fc };
+        } else {
+            this.enPassant = null;
+        }
+
+        this.turn = this.turn === 'w' ? 'b' : 'w';
+    }
+
+    undo() {
+        if (this.history.length === 0) return false;
+        const prev = this.history.pop();
+        this.board = prev.board;
+        this.turn = prev.turn;
+        this.captured = prev.captured;
+        this.castling = prev.castling;
+        this.enPassant = prev.enPassant;
+        return true;
+    }
+
+    getAllLegalMoves(color) {
+        let moves = [];
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                if (this.board[r][c] && this.board[r][c][0] === color) {
+                    const legal = this.getMovesForSquare(r, c);
+                    legal.forEach(m => {
+                        moves.push({ fr: r, fc: c, tr: m.r, tc: m.c });
+                    });
+                }
+            }
+        }
+        return moves;
+    }
+
+    isGameOver() {
+        const moves = this.getAllLegalMoves(this.turn);
+        if (moves.length === 0) {
+            if (this.isKingChecked(this.turn)) {
+                return 'checkmate';
+            }
+            return 'stalemate';
+        }
+        return false;
+    }
+}
+
+/*
+ * INTELLIGENT MINIMAX AI CHESS BOT
+ * Evaluates positional maps, material tallies, and performs deep Alpha-Beta pruning searches.
+ */
+const pieceValues = { 'p': 10, 'n': 30, 'b': 30, 'r': 50, 'q': 90, 'k': 900 };
+
+// Positional grids encouraging bots to occupy optimal sectors
+const pawnPST = [
+    [0,  0,  0,  0,  0,  0,  0,  0],
+    [5,  5,  5,  5,  5,  5,  5,  5],
+    [1,  1,  2,  3,  3,  2,  1,  1],
+    [0.5,0.5,1,  2.5,2.5,1,  0.5,0.5],
+    [0,  0,  0,  2,  2,  0,  0,  0],
+    [0.5,-0.5,-1,0,  0, -1,-0.5,0.5],
+    [0.5, 1, 1, -2, -2,  1,  1,  0.5],
+    [0,  0,  0,  0,  0,  0,  0,  0]
+];
+
+const knightPST = [
+    [-5, -4, -3, -3, -3, -3, -4, -5],
+    [-4, -2,  0,  0,  0,  0, -2, -4],
+    [-3,  0,  1,  1.5,1.5,1,  0, -3],
+    [-3,  0.5,1.5,2,  2,  1.5,0.5,-3],
+    [-3,  0,  1.5,2,  2,  1.5,0, -3],
+    [-3,  0.5,1,  1.5,1.5,1,  0.5,-3],
+    [-4, -2,  0,  0.5,0.5,0, -2, -4],
+    [-5, -4, -3, -3, -3, -3, -4, -5]
+];
+
+const bishopPST = [
+    [-2, -1, -1, -1, -1, -1, -1, -2],
+    [-1,  0,  0,  0,  0,  0,  0, -1],
+    [-1,  0,  0.5,1,  1,  0.5,0, -1],
+    [-1,  0.5,0.5,1,  1,  0.5,0.5,-1],
+    [-1,  0,  1,  1,  1,  1,  0, -1],
+    [-1,  1,  1,  1,  1,  1,  1, -1],
+    [-1,  0.5,0,  0,  0,  0,  0.5,-1],
+    [-2, -1, -1, -1, -1, -1, -1, -2]
+];
+
+const rookPST = [
+    [0,  0,  0,  0,  0,  0,  0,  0],
+    [0.5,1,  1,  1,  1,  1,  1,  0.5],
+    [-0.5,0, 0,  0,  0,  0,  0, -0.5],
+    [-0.5,0, 0,  0,  0,  0,  0, -0.5],
+    [-0.5,0, 0,  0,  0,  0,  0, -0.5],
+    [-0.5,0, 0,  0,  0,  0,  0, -0.5],
+    [-0.5,0, 0,  0,  0,  0,  0, -0.5],
+    [0,  0,  0,  0.5,0.5,0,  0,  0]
+];
+
+const kingPST = [
+    [-3, -4, -4, -5, -5, -4, -4, -3],
+    [-3, -4, -4, -5, -5, -4, -4, -3],
+    [-3, -4, -4, -5, -5, -4, -4, -3],
+    [-3, -4, -4, -5, -5, -4, -4, -3],
+    [-2, -3, -3, -4, -4, -3, -3, -2],
+    [-1, -2, -2, -2, -2, -2, -2, -1],
+    [2,   2,  0,  0,  0,  0,  2,   2],
+    [2,   3,  1,  0,  0,  1,  3,   2]
+];
+
+function evaluateBoard(boardState) {
+    let score = 0;
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const piece = boardState[r][c];
+            if (piece) {
+                const color = piece[0];
+                const type = piece[1];
+                let value = pieceValues[type] * 10;
+                
+                // Incorporate Positional Tables
+                if (type === 'p') value += (color === 'w' ? pawnPST[r][c] : pawnPST[7-r][c]);
+                else if (type === 'n') value += knightPST[r][c];
+                else if (type === 'b') value += bishopPST[r][c];
+                else if (type === 'r') value += (color === 'w' ? rookPST[r][c] : rookPST[7-r][c]);
+                else if (type === 'k') value += (color === 'w' ? kingPST[r][c] : kingPST[7-r][c]);
+
+                if (color === 'w') {
+                    score += value;
+                } else {
+                    score -= value;
+                }
+            }
+        }
+    }
+    return score;
+}
+
+// Minimax algorithm equipped with alpha-beta pruning optimization
+function minimax(engine, depth, alpha, beta, isMaximizing) {
+    if (depth === 0) {
+        return { score: evaluateBoard(engine.board) };
+    }
+
+    const moves = engine.getAllLegalMoves(engine.turn);
+    if (moves.length === 0) {
+        if (engine.isKingChecked(engine.turn)) {
+            return { score: isMaximizing ? -100000 : 100000 }; // Checkmate penalty
+        }
+        return { score: 0 }; // Draw stalemate
+    }
+
+    let bestMove = null;
+    if (isMaximizing) {
+        let maxScore = -Infinity;
+        for (let m of moves) {
+            const simulated = engine.clone();
+            simulated.executeMove(m.fr, m.fc, m.tr, m.tc, false);
+            const evaluation = minimax(simulated, depth - 1, alpha, beta, false);
+            if (evaluation.score > maxScore) {
+                maxScore = evaluation.score;
+                bestMove = m;
+            }
+            alpha = Math.max(alpha, evaluation.score);
+            if (beta <= alpha) break; // Pruning threshold crossed
+        }
+        return { score: maxScore, move: bestMove };
+    } else {
+        let minScore = Infinity;
+        for (let m of moves) {
+            const simulated = engine.clone();
+            simulated.executeMove(m.fr, m.fc, m.tr, m.tc, false);
+            const evaluation = minimax(simulated, depth - 1, alpha, beta, true);
+            if (evaluation.score < minScore) {
+                minScore = evaluation.score;
+                bestMove = m;
+            }
+            beta = Math.min(beta, evaluation.score);
+            if (beta <= alpha) break; // Pruning threshold crossed
+        }
+        return { score: minScore, move: bestMove };
+    }
+}
+
+// Configures move searches depending on difficulty toggles
+function findBestMove(engine, difficulty = 'medium') {
+    const color = engine.turn;
+    const isMaximizing = color === 'w';
+    
+    if (difficulty === 'easy') {
+        // Random moves or immediate capture priorities
+        const moves = engine.getAllLegalMoves(color);
+        const captures = moves.filter(m => engine.board[m.tr][m.tc]);
+        if (captures.length > 0 && Math.random() < 0.6) {
+            return captures[Math.floor(Math.random() * captures.length)];
+        }
+        return moves[Math.floor(Math.random() * moves.length)];
+    } else if (difficulty === 'medium') {
+        // Search depth 2
+        const result = minimax(engine, 2, -Infinity, Infinity, isMaximizing);
+        return result.move;
+    } else {
+        // Search depth 3 for grandmaster responses
+        const result = minimax(engine, 3, -Infinity, Infinity, isMaximizing);
+        return result.move;
+    }
+}
+
+/*
+ * BUGHOUSE DUAL-BOARD MULTIPLAYER SIMULATION
+ * Dual engines handling independent board computations, synchronized with cross-board captured-piece reserves.
+ */
+let bughouseEngineA = new ChessEngine();
+let bughouseEngineB = new ChessEngine();
+let bughouseReserves = {
+    'a': [], // Captured pieces that Player White can drop on Board A
+    'b': []  // Captured pieces that Teammate Bot B can drop on Board B
+};
+
+function initBughouseState() {
+    bughouseEngineA.reset();
+    bughouseEngineB.reset();
+    bughouseReserves = { 'a': [], 'b': [] };
+}
+
+/*
+ * TACTICS ACADEMY PUZZLE DATA BANK
+ * Educational positions mapping classic tricks, mistakes, and checkmating patterns.
+ */
+const academyPuzzles = [
+    {
+        title: "Lesson 1: The Devastating Knight Fork",
+        subtitle: "Black is too greedy. Punish the exposed Queen with a Knight fork!",
+        guidance: "Find a square where your Knight attacks Black's King AND Queen simultaneously.",
+        board: [
+            ['br', '', 'bb', '', 'bk', 'bb', 'bn', 'br'],
+            ['bp', 'bp', 'bp', '', 'bp', 'bp', 'bp', 'bp'],
+            ['', '', 'bn', '', '', '', '', ''],
+            ['', '', '', '', 'bq', '', '', ''],
+            ['', '', '', '', 'wp', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['wp', 'wp', 'wp', 'wp', '', 'wp', 'wp', 'wp'],
+            ['wr', 'wn', 'wb', 'wq', 'wk', 'wb', '', 'wr']
+        ],
+        solution: { fr: 7, fc: 1, tr: 5, tc: 2 }, // Knight moves to c3, threatening d5/e4
+        nextStep: { fr: 5, fc: 2, tr: 3, tc: 3 } // Or direct fork on c7 targeting k + q
+    },
+    {
+        title: "Lesson 2: Absolute Pins",
+        subtitle: "Black's Rook is pinned against the King. Deliver the winning checkmate!",
+        guidance: "The black rook is completely paralyzed because moving it exposes the King to Queen capture. Exploit this!",
+        board: [
+            ['', '', '', '', 'bk', '', '', ''],
+            ['', '', '', '', '', 'br', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', 'wq', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', '']
+        ],
+        solution: { fr: 5, fc: 5, tr: 0, tc: 5 } // Q-f8 Mate
+    },
+    {
+        title: "Lesson 3: Back-Rank Mate Ambush",
+        subtitle: "Black is defenseless on the final row. Capture checkmate!",
+        guidance: "A King trapped behind its own pawns can easily be checkmated on the edge of the board.",
+        board: [
+            ['br', '', '', '', 'bk', '', '', ''],
+            ['bp', 'bp', 'bp', '', '', 'bp', 'bp', 'bp'],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['wp', 'wp', 'wp', '', '', 'wp', 'wp', 'wp'],
+            ['', '', '', '', 'wr', '', '', '']
+        ],
+        solution: { fr: 7, fc: 4, tr: 0, tc: 4 } // R-e8 mate
+    },
+    {
+        title: "Lesson 4: Defeating Scholar's Mate",
+        subtitle: "Black wants to checkmate you on f7. Find the best defensive play!",
+        guidance: "Black's Queen wants to land on f7 for an immediate victory. Interrupt her line of attack with a Knight!",
+        board: [
+            ['br', 'bn', 'bb', 'bq', 'bk', 'bb', 'bn', 'br'],
+            ['bp', 'bp', 'bp', 'bp', '', 'bp', 'bp', 'bp'],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', 'bp', '', 'bq', ''],
+            ['', '', '', '', 'wp', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['wp', 'wp', 'wp', 'wp', '', 'wp', 'wp', 'wp'],
+            ['wr', 'wn', 'wb', '', 'wk', 'wb', 'wn', 'wr']
+        ],
+        solution: { fr: 7, fc: 1, tr: 5, tc: 2 } // Nc3/Nf3 defending f7 coordinate lines
+    }
+];
+
+let activePuzzleIndex = 0;
+let academyEngine = new ChessEngine();
+
+/*
+ * SYSTEM STATE MANAGEMENT
+ * Monitors the current tab selections, active modes, chess themes, selections, and blunder buffers.
+ */
+let currentTab = 'dashboard';
+let soloEngine = new ChessEngine();
+let activeMode = 'cpu'; // 'cpu' or 'local'
+let currentDifficulty = 'easy'; // 'easy', 'medium', 'hard'
+let coachEnabled = true;
+
+// Drag and drop state indicators
+let selectedSquare = null;
+let bughouseSelectedPiece = null; // Storing dropped pieces selected from hands
+let promotionPromise = null; // Prompts users for choice asynchronously
+
+function switchTab(tabId) {
+    currentTab = tabId;
+    
+    // Manage styles
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-gray-900', 'text-white');
+        btn.classList.add('text-gray-400', 'hover:text-white');
+    });
+    const activeTabButton = document.getElementById(`tab-${tabId}`);
+    if (activeTabButton) {
+        activeTabButton.classList.remove('text-gray-400');
+        activeTabButton.classList.add('bg-gray-900', 'text-white');
+    }
+
+    // Toggle panel visibility
+    document.getElementById('view-dashboard').classList.add('hidden');
+    document.getElementById('view-play').classList.add('hidden');
+    document.getElementById('view-bughouse').classList.add('hidden');
+    document.getElementById('view-academy').classList.add('hidden');
+
+    document.getElementById(`view-${tabId}`).classList.remove('hidden');
+
+    if (tabId === 'play') {
+        renderBoard('chessboard', soloEngine, handleSquareClick);
+        updateEvaluations();
+    } else if (tabId === 'bughouse') {
+        initBughouseState();
+        startBughouseGame();
+    } else if (tabId === 'academy') {
+        selectAcademyPuzzle(activePuzzleIndex);
+    }
+}
+
+function startInstantGame(mode) {
+    activeMode = mode;
+    switchTab('play');
+    resetActiveGame();
+}
+
+/*
+ * HIGH-DENSITY CHESSBOARD RENDERING
+ * Rebuilds the DOM matrix mapping squares, pieces, move trails, checks, and drag interactions.
+ */
+function renderBoard(elementId, engine, clickHandler, activeHighlights = []) {
+    const boardEl = document.getElementById(elementId);
+    boardEl.innerHTML = '';
+
+    const turnColor = engine.turn;
+    const isKingChecked = engine.isKingChecked(turnColor);
+
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const tile = document.createElement('div');
+            tile.className = `aspect-square flex items-center justify-center relative transition-all duration-150`;
+            
+            // Add grid light / dark background themes
+            const isDark = (r + c) % 2 === 1;
+            tile.classList.add(isDark ? 'tile-dark' : 'tile-light');
+
+            // Set coordinates dataset
+            tile.dataset.row = r;
+            tile.dataset.col = c;
+
+            // Highlight possible destinations if selecting
+            if (activeHighlights.some(h => h.r === r && h.c === c)) {
+                const targetPiece = engine.board[r][c];
+                const indicator = document.createElement('div');
+                if (targetPiece) {
+                    // Enemy indicator: Border ring around square
+                    indicator.className = "absolute inset-1.5 rounded-full border-4 border-amber-500/70 pointer-events-none";
+                } else {
+                    // Safe dot indicator
+                    indicator.className = "w-3 h-3 rounded-full bg-amber-500/80 pointer-events-none";
+                }
+                tile.appendChild(indicator);
+            }
+
+            // Highlights selected state
+            if (selectedSquare && selectedSquare.r === r && selectedSquare.c === c) {
+                tile.classList.add('bg-indigo-500/35');
+            }
+
+            const piece = engine.board[r][c];
+            if (piece) {
+                tile.innerHTML += getPieceHTML(piece);
+                
+                // King checked highlight
+                if (piece === turnColor + 'k' && isKingChecked) {
+                    tile.querySelector('div').classList.add('king-checked');
+                }
+            }
+
+            // Bind click handler
+            tile.addEventListener('click', () => clickHandler(r, c, engine, elementId));
+            boardEl.appendChild(tile);
+        }
+    }
+}
+
+/*
+ * USER TURN SELECTION AND ENGINE DISPATCHER
+ * Decodes board selection coordinates, queries valid vectors, executes state moves, and prompts bots.
+ */
+function handleSquareClick(r, c, engine, boardId) {
+    if (engine.turn === 'b' && activeMode === 'cpu') return; // Awaiting Computer Bot turn
+
+    const piece = engine.board[r][c];
+
+    // Clicked on a piece belonging to active player -> Highlight options
+    if (piece && piece[0] === engine.turn) {
+        selectedSquare = { r, c };
+        const highlights = engine.getMovesForSquare(r, c);
+        renderBoard(boardId, engine, handleSquareClick, highlights);
+        playSynthSound('move');
+        return;
+    }
+
+    // Clicked empty or enemy tile while selecting allied piece -> attempt move execution
+    if (selectedSquare) {
+        const moves = engine.getMovesForSquare(selectedSquare.r, selectedSquare.c);
+        const match = moves.find(m => m.r === r && m.c === c);
+
+        if (match) {
+            // Check blunder coach interception before carrying out real-time updates
+            if (coachEnabled && engine.turn === 'w' && activeMode === 'cpu') {
+                const isBlunderResult = analyzeBlunderPotential(selectedSquare.r, selectedSquare.c, r, c, engine);
+                if (isBlunderResult) {
+                    // Show blunder overlay intercept
+                    triggerBlunderWarning(isBlunderResult, () => {
+                        // Action callback if human bypasses / forces move
+                        executeMovePipeline(selectedSquare.r, selectedSquare.c, r, c, engine, boardId);
+                    });
+                    return;
+                }
+            }
+
+            executeMovePipeline(selectedSquare.r, selectedSquare.c, r, c, engine, boardId);
+        } else {
+            // Cancel selection
+            selectedSquare = null;
+            renderBoard(boardId, engine, handleSquareClick);
+        }
+    }
+}
+
+function executeMovePipeline(fr, fc, tr, tc, engine, boardId) {
+    engine.executeMove(fr, fc, tr, tc, true);
+    selectedSquare = null;
+    renderBoard(boardId, engine, handleSquareClick);
+    
+    // Standard game screen shake on dynamic captures
+    if (engine.board[tr][tc]) {
+        document.getElementById('board-container').classList.add('shake-effect');
+        setTimeout(() => document.getElementById('board-container').classList.remove('shake-effect'), 500);
+    }
+
+    updateCapturedDisplays();
+    updateEvaluations();
+    logMovesInBattle(engine);
+
+    // Prompt immediate Bot response
+    const state = engine.isGameOver();
+    if (state) {
+        handleGameOver(state, engine.turn);
+    } else if (activeMode === 'cpu' && engine.turn === 'b') {
+        document.getElementById('active-opp-level').innerText = "Thinking...";
+        document.getElementById('opp-turn-dot').classList.replace('bg-gray-600', 'bg-amber-500');
+        
+        setTimeout(() => {
+            const best = findBestMove(engine, currentDifficulty);
+            if (best) {
+                engine.executeMove(best.fr, best.fc, best.tr, best.tc, true);
+                renderBoard(boardId, engine, handleSquareClick);
+                updateCapturedDisplays();
+                updateEvaluations();
+                logMovesInBattle(engine);
+                
+                const postState = engine.isGameOver();
+                if (postState) {
+                    handleGameOver(postState, engine.turn);
+                }
+            }
+            document.getElementById('active-opp-level').innerText = currentDifficulty.toUpperCase() + " Mind";
+            document.getElementById('opp-turn-dot').classList.replace('bg-amber-500', 'bg-gray-600');
+        }, 800);
+    }
+}
+
+/*
+ * REAL-TIME BLUNDER ANALYSIS SYSTEM
+ * Scans positional tables and queries minimax algorithms to predict and tutor bad choices.
+ */
+function analyzeBlunderPotential(fr, fc, tr, tc, engine) {
+    const backupEngine = engine.clone();
+    
+    // Calculate evaluation BEFORE the move
+    const beforeScore = evaluateBoard(backupEngine.board);
+    
+    // Execute move on clone
+    backupEngine.executeMove(fr, fc, tr, tc, false);
+    
+    // Calculate evaluation AFTER the move
+    const afterScore = evaluateBoard(backupEngine.board);
+
+    // If score drops by more than 15 units (equivalent to 1.5 pawns value lost in minimax depth)
+    const scoreDeficit = beforeScore - afterScore;
+    
+    if (scoreDeficit > 15) {
+        const movingPiece = engine.board[fr][fc];
+        const pieceFriendlyName = { 'p': 'Pawn', 'n': 'Knight', 'b': 'Bishop', 'r': 'Rook', 'q': 'Queen', 'k': 'King' }[movingPiece[1]];
+        
+        return {
+            msg: `Leaving your ${pieceFriendlyName} undefended or sliding into an unfavorable trade line! This drops your core positional control.`,
+            rec: `Consider maintaining center pressure or reinforcing your active pawn chain instead.`
+        };
+    }
+    return null;
+}
+
+let blunderForceCallback = null;
+
+function triggerBlunderWarning(blunderData, forceMoveCallback) {
+    playSynthSound('blunder');
+    document.getElementById('blunder-analysis-text').innerText = blunderData.msg;
+    document.getElementById('blunder-recommendation-text').innerText = blunderData.rec;
+    
+    const modal = document.getElementById('blunder-modal');
+    modal.classList.remove('hidden');
+    
+    blunderForceCallback = forceMoveCallback;
+}
+
+function resolveBlunderChoice(choice) {
+    document.getElementById('blunder-modal').classList.add('hidden');
+    if (choice === 'undo') {
+        // Clear selection and re-render board safely
+        selectedSquare = null;
+        renderBoard('chessboard', soloEngine, handleSquareClick);
+        playSynthSound('success');
+    } else if (choice === 'force') {
+        if (blunderForceCallback) blunderForceCallback();
+    }
+}
+
+function undoLastMove() {
+    // If playing vs CPU, must undo BOTH human and computer move
+    if (activeMode === 'cpu') {
+        soloEngine.undo(); // Undos Bot move
+        soloEngine.undo(); // Undos your move
+    } else {
+        soloEngine.undo();
+    }
+    selectedSquare = null;
+    renderBoard('chessboard', soloEngine, handleSquareClick);
+    updateCapturedDisplays();
+    updateEvaluations();
+    logMovesInBattle(soloEngine);
+    playSynthSound('success');
+}
+
+function resetActiveGame() {
+    soloEngine.reset();
+    selectedSquare = null;
+    renderBoard('chessboard', soloEngine, handleSquareClick);
+    updateCapturedDisplays();
+    updateEvaluations();
+    logMovesInBattle(soloEngine);
+    playSynthSound('success');
+}
+
+function setPlayOpponent(mode) {
+    activeMode = mode;
+    
+    document.getElementById('opp-cpu').className = "px-3 py-2 text-xs font-bold rounded-lg border transition bg-gray-950 border-gray-800 text-gray-400 hover:border-gray-700";
+    document.getElementById('opp-local').className = "px-3 py-2 text-xs font-bold rounded-lg border transition bg-gray-950 border-gray-800 text-gray-400 hover:border-gray-700";
+    
+    if (mode === 'cpu') {
+        document.getElementById('opp-cpu').className = "px-3 py-2 text-xs font-bold rounded-lg border transition bg-indigo-600/20 border-indigo-500 text-indigo-300";
+        document.getElementById('active-opp-name').innerText = "DeepMind Bot v1";
+        document.getElementById('active-opp-level').innerText = currentDifficulty.toUpperCase() + " MIND";
+        document.getElementById('difficulty-panel').classList.remove('opacity-40', 'pointer-events-none');
+    } else {
+        document.getElementById('opp-local').className = "px-3 py-2 text-xs font-bold rounded-lg border transition bg-indigo-600/20 border-indigo-500 text-indigo-300";
+        document.getElementById('active-opp-name').innerText = "Local Friend";
+        document.getElementById('active-opp-level').innerText = "PASS & PLAY MODE";
+        document.getElementById('difficulty-panel').classList.add('opacity-40', 'pointer-events-none');
+    }
+    resetActiveGame();
+}
+
+function setDifficulty(lvl) {
+    currentDifficulty = lvl;
+    document.getElementById('diff-easy').className = "px-2 py-1.5 text-xs font-bold rounded-lg border bg-gray-950 border-gray-800 text-gray-400 hover:border-gray-700";
+    document.getElementById('diff-medium').className = "px-2 py-1.5 text-xs font-bold rounded-lg border bg-gray-950 border-gray-800 text-gray-400 hover:border-gray-700";
+    document.getElementById('diff-hard').className = "px-2 py-1.5 text-xs font-bold rounded-lg border bg-gray-950 border-gray-800 text-gray-400 hover:border-gray-700";
+    
+    const colors = { 'easy': 'emerald', 'medium': 'amber', 'hard': 'red' };
+    const btn = document.getElementById(`diff-${lvl}`);
+    btn.className = `px-2 py-1.5 text-xs font-bold rounded-lg border bg-${colors[lvl]}-500/10 border-${colors[lvl]}-500/30 text-${colors[lvl]}-400`;
+    
+    document.getElementById('active-opp-level').innerText = lvl.toUpperCase() + " MIND";
+    playSynthSound('success');
+}
+
+function toggleCoach(bool) {
+    coachEnabled = bool;
+    playSynthSound('success');
+}
+
+function changeTheme(theme) {
+    const boards = ['chessboard', 'bughouse-board-a', 'bughouse-board-b', 'academy-board'];
+    boards.forEach(bId => {
+        const board = document.getElementById(bId);
+        if (board) {
+            board.className = `grid grid-cols-8 grid-rows-8 w-full h-full board-${theme}`;
+        }
+    });
+    playSynthSound('success');
+}
+
+function updateEvaluations() {
+    const rawEval = evaluateBoard(soloEngine.board) / 10;
+    const sign = rawEval >= 0 ? '+' : '';
+    document.getElementById('eval-text').innerText = sign + rawEval.toFixed(1);
+    
+    // Bound height percentage dynamically
+    let pct = 50 + (rawEval * 5);
+    pct = Math.max(5, Math.min(95, pct));
+    document.getElementById('eval-bar').style.height = `${pct}%`;
+}
+
+function updateCapturedDisplays() {
+    const bCap = document.getElementById('captured-black');
+    const wCap = document.getElementById('captured-white');
+    
+    bCap.innerHTML = '';
+    wCap.innerHTML = '';
+
+    soloEngine.captured.b.forEach(piece => {
+        bCap.innerHTML += `<span class="bg-gray-800 rounded px-1.5 py-0.5 text-xs" title="Captured Black piece">${unicodePieces[piece]}</span>`;
+    });
+    soloEngine.captured.w.forEach(piece => {
+        wCap.innerHTML += `<span class="bg-gray-900 border border-gray-800 rounded px-1.5 py-0.5 text-xs text-white" title="Captured White piece">${unicodePieces[piece]}</span>`;
+    });
+}
+
+function logMovesInBattle(engine) {
+    const log = document.getElementById('move-history-container');
+    if (engine.history.length === 0) {
+        log.innerHTML = `<div class="text-gray-500 text-xs italic text-center py-8">No moves played yet. Start by moving a pawn or knight!</div>`;
+        document.getElementById('log-turn-counter').innerText = `Move 0`;
+        return;
+    }
+
+    log.innerHTML = '';
+    const moves = [];
+    // Format moves elegantly in columns
+    for (let i = 0; i < engine.history.length; i++) {
+        const turnLabel = i % 2 === 0 ? 'White' : 'Black';
+        moves.push(`<div class="flex justify-between py-1 border-b border-gray-800/45 px-2 text-xs">
+            <span class="text-gray-500 font-bold">${Math.floor(i/2)+1}. ${turnLabel}</span>
+            <span class="text-indigo-300 font-semibold uppercase">Action</span>
+        </div>`);
+    }
+    log.innerHTML = moves.join('');
+    document.getElementById('log-turn-counter').innerText = `Move ${engine.history.length}`;
+}
+
+function handleGameOver(state, losingColor) {
+    playSynthSound('check');
+    const winner = losingColor === 'w' ? 'Black' : 'White';
+    setTimeout(() => {
+        alert(state === 'checkmate' ? `🏆 CHECKMATE! Team ${winner} wins the battle arena!` : `🤝 STALEMATE! The match results in an absolute draw.`);
+    }, 100);
+}
+
+function requestHint() {
+    const best = findBestMove(soloEngine, 'hard');
+    if (best) {
+        // Highlight square temporarily
+        const tile = document.querySelector(`#chessboard [data-row='${best.fr}'][data-col='${best.fc}']`);
+        if (tile) {
+            tile.classList.add('bg-amber-500/55');
+            setTimeout(() => tile.classList.remove('bg-amber-500/55'), 1500);
+            playSynthSound('success');
+            document.getElementById('coach-realtime-bubble').innerText = `I recommend moving from tile (${best.fr}, ${best.fc}) to coordinate (${best.tr}, ${best.tc}) for high positional advantages.`;
+        }
+    }
+}
+
+/*
+ * BUGHOUSE STATE LOOPS AND GAME LOOPS
+ * Connects automated AI partner behaviors with drop piece interactions on Board A.
+ */
+function startBughouseGame() {
+    bughouseEngineA.reset();
+    bughouseEngineB.reset();
+    bughouseReserves = { 'a': [], 'b': [] };
+    
+    renderBoard('bughouse-board-a', bughouseEngineA, handleBughouseClickA);
+    renderBoard('bughouse-board-b', bughouseEngineB, () => {}); // Simulated Board B is passive but interactive
+    
+    updateBughouseReservesUI();
+    document.getElementById('bughouse-turn-indicator-a').innerText = "Your Turn";
+    document.getElementById('bughouse-turn-indicator-b').innerText = "Ready";
+    playSynthSound('success');
+}
+
+function handleBughouseClickA(r, c, engine, boardId) {
+    // Drop piece execution
+    if (bughouseSelectedPiece) {
+        if (!engine.board[r][c]) {
+            // Drop piece safely
+            engine.board[r][c] = bughouseSelectedPiece;
+            
+            // Remove from hand array
+            const index = bughouseReserves.a.indexOf(bughouseSelectedPiece);
+            if (index > -1) bughouseReserves.a.splice(index, 1);
+            
+            bughouseSelectedPiece = null;
+            engine.turn = engine.turn === 'w' ? 'b' : 'w';
+            
+            finishBughouseAUserMove();
+            return;
+        }
+    }
+
+    // Normal Click Handling
+    const piece = engine.board[r][c];
+    if (piece && piece[0] === engine.turn) {
+        selectedSquare = { r, c };
+        const highlights = engine.getMovesForSquare(r, c);
+        renderBoard(boardId, engine, handleBughouseClickA, highlights);
+        return;
+    }
+
+    if (selectedSquare) {
+        const moves = engine.getMovesForSquare(selectedSquare.r, selectedSquare.c);
+        const match = moves.find(m => m.r === r && m.c === c);
+
+        if (match) {
+            const capturedPiece = engine.board[r][c];
+            engine.executeMove(selectedSquare.r, selectedSquare.c, r, c, true);
+            
+            // Capture passed to Board B reserve pool!
+            if (capturedPiece) {
+                bughouseReserves.b.push(capturedPiece[0] === 'w' ? 'bp' : 'wp'); // simplified drops
+            }
+
+            selectedSquare = null;
+            finishBughouseAUserMove();
+        } else {
+            selectedSquare = null;
+            renderBoard(boardId, engine, handleBughouseClickA);
+        }
+    }
+}
+
+function finishBughouseAUserMove() {
+    renderBoard('bughouse-board-a', bughouseEngineA, handleBughouseClickA);
+    updateBughouseReservesUI();
+    
+    // Simulate CPU B automatic response on Board B and passed captures
+    document.getElementById('bughouse-turn-indicator-a').innerText = "CPU Turn...";
+    
+    // CPU Opponent A turn on Board A
+    setTimeout(() => {
+        const best = findBestMove(bughouseEngineA, 'medium');
+        if (best) {
+            const cap = bughouseEngineA.board[best.tr][best.tc];
+            bughouseEngineA.executeMove(best.fr, best.fc, best.tr, best.tc, true);
+            if (cap) {
+                // Pass captured piece to Opponent B drop reservoir
+                bughouseReserves.b.push(cap[0] === 'w' ? 'bp' : 'wp');
+            }
+        }
+        renderBoard('bughouse-board-a', bughouseEngineA, handleBughouseClickA);
+        updateBughouseReservesUI();
+        document.getElementById('bughouse-turn-indicator-a').innerText = "Your Turn";
+        
+        // Let's also trigger a random automated move on Board B!
+        simulateBoardBTurn();
+    }, 1000);
+}
+
+function simulateBoardBTurn() {
+    // Board B: White AI Partner vs Black Opponent CPU B
+    document.getElementById('bughouse-turn-indicator-b').innerText = "Partner thinking...";
+    
+    setTimeout(() => {
+        // AI Partner makes move on Board B
+        const bestPartner = findBestMove(bughouseEngineB, 'medium');
+        if (bestPartner) {
+            const cap = bughouseEngineB.board[bestPartner.tr][bestPartner.tc];
+            bughouseEngineB.executeMove(bestPartner.fr, bestPartner.fc, bestPartner.tr, bestPartner.tc, true);
+            
+            // Captures on Board B are handed down to you! Board A reserves.
+            if (cap) {
+                bughouseReserves.a.push(cap[0] === 'w' ? 'bp' : 'wp');
+            }
+        }
+        
+        // Opponent CPU B replies instantly
+        const bestOpponent = findBestMove(bughouseEngineB, 'easy');
+        if (bestOpponent) {
+            bughouseEngineB.executeMove(bestOpponent.fr, bestOpponent.fc, bestOpponent.tr, bestOpponent.tc, true);
+        }
+        
+        renderBoard('bughouse-board-b', bughouseEngineB, () => {});
+        updateBughouseReservesUI();
+        document.getElementById('bughouse-turn-indicator-b').innerText = "Live";
+    }, 600);
+}
+
+function selectBughouseDropPiece(pieceType) {
+    bughouseSelectedPiece = pieceType;
+    // Visually highlight drop indicators: all empty squares
+    const highlights = [];
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            if (!bughouseEngineA.board[r][c]) {
+                highlights.push({ r, c });
+            }
+        }
+    }
+    renderBoard('bughouse-board-a', bughouseEngineA, handleBughouseClickA, highlights);
+    playSynthSound('move');
+}
+
+function updateBughouseReservesUI() {
+    const resA = document.getElementById('bughouse-reserve-a');
+    const resB = document.getElementById('bughouse-reserve-b');
+    
+    resA.innerHTML = '';
+    resB.innerHTML = '';
+
+    bughouseReserves.a.forEach((p, index) => {
+        const span = document.createElement('span');
+        span.className = "bg-pink-600/30 border border-pink-500 text-pink-300 rounded-xl px-2.5 py-1 text-xs cursor-pointer hover:bg-pink-600/55 select-none font-bold";
+        span.innerHTML = `${unicodePieces[p]}`;
+        span.onclick = () => selectBughouseDropPiece(p);
+        resA.appendChild(span);
+    });
+
+    bughouseReserves.b.forEach(p => {
+        resB.innerHTML += `<span class="bg-gray-800 border border-gray-700 text-gray-400 rounded-xl px-2.5 py-1 text-xs select-none">${unicodePieces[p]}</span>`;
+    });
+}
+
+/*
+ * MASTERCLASS INTERACTIVE LESSONS
+ * Highlights coordinates, checks solutions, updates player ratings, and guides the user.
+ */
+function selectAcademyPuzzle(index) {
+    activePuzzleIndex = index;
+    const p = academyPuzzles[index];
+    
+    // Manage puzzle styling selections
+    for (let i = 0; i < 4; i++) {
+        const item = document.getElementById(`puzzle-item-${i}`);
+        if (item) {
+            item.className = "p-3 rounded-xl border border-gray-800 bg-gray-950/40 cursor-pointer hover:bg-gray-900/30 transition flex items-center justify-between";
+            const icon = item.querySelector('i');
+            icon.className = "fa-solid fa-circle-play text-gray-600 text-lg";
+        }
+    }
+    const activeItem = document.getElementById(`puzzle-item-${index}`);
+    if (activeItem) {
+        activeItem.className = "p-3 rounded-xl border border-emerald-500 bg-emerald-950/10 cursor-pointer hover:bg-emerald-950/25 transition flex items-center justify-between";
+        activeItem.querySelector('i').className = "fa-solid fa-circle-play text-emerald-400 text-lg";
+    }
+
+    // Set engine parameters
+    academyEngine.reset();
+    academyEngine.board = p.board.map(row => [...row]);
+    academyEngine.turn = 'w';
+
+    document.getElementById('puzzle-title').innerText = p.title;
+    document.getElementById('puzzle-subtitle').innerText = p.subtitle;
+    document.getElementById('puzzle-guidance-text').innerText = p.guidance;
+    document.getElementById('puzzle-score-badge').innerText = `Lesson ${index + 1}`;
+
+    renderBoard('academy-board', academyEngine, handleAcademyClick);
+}
+
+function handleAcademyClick(r, c, engine, boardId) {
+    const piece = engine.board[r][c];
+
+    if (piece && piece[0] === 'w') {
+        selectedSquare = { r, c };
+        const highlights = engine.getMovesForSquare(r, c);
+        renderBoard(boardId, engine, handleAcademyClick, highlights);
+        return;
+    }
+
+    if (selectedSquare) {
+        const moves = engine.getMovesForSquare(selectedSquare.r, selectedSquare.c);
+        const match = moves.find(m => m.r === r && m.c === c);
+
+        if (match) {
+            const sol = academyPuzzles[activePuzzleIndex].solution;
+            
+            // Check if player's coordinates matches correct lesson solution
+            if (selectedSquare.r === sol.fr && selectedSquare.c === sol.fc && r === sol.tr && c === sol.tc) {
+                engine.executeMove(selectedSquare.r, selectedSquare.c, r, c, true);
+                selectedSquare = null;
+                renderBoard(boardId, engine, handleAcademyClick);
+                
+                playSynthSound('success');
+                document.getElementById('puzzle-guidance-text').innerText = "🎉 ABSOLUTELY CORRECT! Excellent analytical work, candidate Grandmaster!";
+                
+                // Advance rating and syllabus counts
+                document.getElementById('academy-completed-count').innerText = `${activePuzzleIndex + 1} / 4`;
+                document.getElementById('academy-rating').innerText = 1200 + (activePuzzleIndex + 1) * 150;
+            } else {
+                playSynthSound('blunder');
+                document.getElementById('puzzle-guidance-text').innerText = "❌ Incorrect move! That leaves lines weak or lets defenders break pins. Retake and try again!";
+                selectedSquare = null;
+                renderBoard(boardId, engine, handleAcademyClick);
+            }
+        } else {
+            selectedSquare = null;
+            renderBoard(boardId, engine, handleAcademyClick);
+        }
+    }
+}
+
+function loadRandomAcademyPuzzle() {
+    switchTab('academy');
+    const rand = Math.floor(Math.random() * academyPuzzles.length);
+    selectAcademyPuzzle(rand);
+}
+
+// Window load trigger setup
+window.onload = function() {
+    soloEngine.reset();
+    renderBoard('chessboard', soloEngine, handleSquareClick);
+    updateEvaluations();
+    updateCapturedDisplays();
+};
+</script>
+</body>
+</html>
